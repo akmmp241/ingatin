@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE reminder_jobs SET status = 'SENT' WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "ed803ecc6a586a0f7a6c765e1640f6d73aaed169eaf9111216dfffe29c8889ad"
+}

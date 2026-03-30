@@ -1,5 +1,6 @@
-use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Error, SqlitePool};
+use std::str::FromStr;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -32,8 +33,20 @@ pub struct AppState {
 }
 
 pub async fn get_db_pool(url: String) -> Result<SqlitePool, Error> {
-    SqlitePoolOptions::new()
+    let opt = SqliteConnectOptions::from_str(&url)?.create_if_missing(true);
+
+    let pool = SqlitePoolOptions::new()
         .max_connections(5)
-        .connect(&url)
-        .await
+        .connect_with(opt)
+        .await?;
+
+    tracing::info!("running migrations");
+
+    sqlx::raw_sql(include_str!("../database/schema.sql"))
+        .execute(&pool)
+        .await?;
+
+    tracing::info!("migration successfully executed");
+
+    Ok(pool)
 }

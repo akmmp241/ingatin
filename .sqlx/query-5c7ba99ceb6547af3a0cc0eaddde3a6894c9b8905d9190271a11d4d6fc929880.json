@@ -1,0 +1,74 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            select t.id,\n                   t.title,\n                   t.description,\n                   t.label,\n                   t.target,\n                   t.dateline as \"dateline: chrono::DateTime<chrono::Utc>\",\n                   r.id as job_id,\n                   r.task_id,\n                   r.remind_at as \"remind_at: chrono::DateTime<chrono::Utc>\",\n                   r.status as \"status: crate::domain::reminder_job::ReminderJobStatus\"\n            from tasks t\n                     inner join reminder_jobs r on t.id = r.task_id\n            where r.remind_at <= ?\n              and r.status = 'PENDING';\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "label",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "target",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "dateline: chrono::DateTime<chrono::Utc>",
+        "ordinal": 5,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "job_id",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "task_id",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "remind_at: chrono::DateTime<chrono::Utc>",
+        "ordinal": 8,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "status: crate::domain::reminder_job::ReminderJobStatus",
+        "ordinal": 9,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5c7ba99ceb6547af3a0cc0eaddde3a6894c9b8905d9190271a11d4d6fc929880"
+}

@@ -1,0 +1,35 @@
+services:
+  app:
+    image: ingatin:${APP_VERSION:-latest}
+    user: "1000:1000"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - RUST_LOG=info
+      - DATABASE_URL=sqlite://data/app.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL_TYPE=${GEMINI_MODEL_TYPE}
+      - WAHA_API_URL=${WAHA_API_URL}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_SESSION=${WAHA_SESSION}
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 128M              # SQLite needs far less RAM than Postgres
+        reservations:
+          memory: 12M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

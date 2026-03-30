@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            INSERT INTO reminder_jobs (id, task_id, remind_at)\n            VALUES (?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "0aca01ee69d29443b9359930db3a191b7d6c3398eae8da4c2125ba0a5b7ad59e"
+}
