@@ -1,43 +1,128 @@
 # ⏰ Ingatin
 
-**Ingatin** (Indonesian for *"Remind me"*) is a lightweight, AI-powered WhatsApp bot designed to manage personal academic tasks and event reminders. Instead of relying on rigid command syntaxes, Ingatin uses an LLM to understand natural language inputs, seamlessly extracting task details and deadlines, and scheduling automated WhatsApp alerts.
+**Ingatin** (Indonesian: *"Remind me"*) is an AI-powered WhatsApp reminder bot that understands natural language. Simply chat with it like you would a friend — describe your task, deadline, and when you'd like to be reminded — and it handles the rest automatically.
 
-Built with an emphasis on low memory footprint and high performance, this monolithic backend runs entirely on **Rust** and **SQLite**, making it highly efficient for cheap VPS deployments.
+Built with **Rust** for maximum performance and **SQLite** for zero-ops persistence, Ingatin is designed to run efficiently on minimal infrastructure (including cheap VPS instances) without sacrificing reliability.
+
+---
 
 ## ✨ Features
 
-- **🧠 Natural Language Processing:** Just chat with the bot naturally (e.g., *"Remind me to submit my networking assignment tomorrow at 10 AM"*), and the LLM handles the parsing.
-- **⚡ Blazing Fast & Lightweight:** Powered by Rust (Axum) and SQLite. No heavy message brokers (like Redis/RabbitMQ) required.
-- **🕒 Native Background Scheduler:** Utilizes `tokio::time::interval` for an efficient, non-blocking asynchronous polling system to trigger reminders.
-- **💬 Direct WhatsApp Integration:** Uses WAHA (WhatsApp HTTP API) for real-time inbound webhooks and outbound notifications.
-- **🐳 Docker Ready:** Easily deployable using a single `docker-compose.yml`.
+- **🧠 Natural Language Understanding** — No rigid commands. Just send messages like *"Ingatkan aku untuk submit tugas jaringan besok jam 10 pagi"* and the LLM extracts the task, deadline, and reminder schedule automatically.
+- **⚡ Blazing Fast & Lightweight** — Powered by Rust (Axum) and SQLite. No Redis, no RabbitMQ, no heavy dependencies.
+- **🔁 Configurable Background Scheduler** — Uses `tokio::time::interval` for non-blocking async polling. Tick intervals are configurable via environment variables.
+- **💬 WhatsApp Integration** — Seamless two-way messaging through [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/) — receives inbound webhooks and pushes outbound notifications.
+- **🤖 AI-Generated Reminder Messages** — Reminder notifications are dynamically composed by the LLM, creating friendly and context-aware messages rather than generic alerts.
+- **📋 Multi-Reminder Support** — A single task can have multiple reminder schedules (e.g., *"ingatkan H-1 dan 2 jam sebelumnya"*).
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Backend:** [Rust](https://www.rust-lang.org/)
-- **Web Framework:** [Axum](https://github.com/tokio-rs/axum)
-- **Database:** [SQLite](https://sqlite.org/) (via [SQLx](https://github.com/launchbadge/sqlx))
-- **WhatsApp API:** [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/)
-- **AI / LLM:** Gemini API (potentially)
+| Layer | Technology                                                                       |
+|---|----------------------------------------------------------------------------------|
+| **Language** | [Rust](https://www.rust-lang.org/)                                               |
+| **Web Framework** | [Axum](https://github.com/tokio-rs/axum) 0.8                                     |
+| **Async Runtime** | [Tokio](https://tokio.rs/)                                                       |
+| **Database** | [SQLite](https://sqlite.org/) via [SQLx](https://github.com/launchbadge/sqlx) 0.8 |
+| **AI / LLM** | [Google Gemini API](https://ai.google.dev/)                                      |
+| **WhatsApp API** | [WAHA](https://waha.devlike.pro/)                                                |
+| **HTTP Client** | [Reqwest](https://github.com/seanmonstar/reqwest)                                |
+| **Logging** | [tracing](https://github.com/tokio-rs/tracing) + tracing-subscriber              |
 
-## 🏗️ Architecture Flow
+---
 
-1. **Inbound:** You send a message via WhatsApp. WAHA triggers a webhook to the Rust Axum server.
-2. **Extraction:** The server forwards the text to an LLM with a specific system prompt to extract structured JSON (Task Name, Deadline, Reminder Time).
-3. **Storage:** The parsed data is stored safely in a local SQLite `.db` file.
-4. **Polling:** A Tokio background task ticks every 60 seconds, querying SQLite for due reminders.
-5. **Outbound:** When a schedule is met, the server calls the WAHA API to push a reminder message back to your WhatsApp.
+## 🏗️ Architecture
 
-## 🚀 Quick Start
+```
+┌──────────────┐     Webhook      ┌─────────────────────────────────────────┐
+│   WhatsApp   │ ──────────────▶  │              Axum Server                │
+│    (User)    │                  │                                         │
+│              │ ◀──────────────  │  ┌─────────┐   ┌────────────────────┐  │
+└──────────────┘   Push Message   │  │ Handler │──▶│  Gemini Client     │  │
+                                  │  │(Webhook)│   │  (NLU Extraction)  │  │
+                                  │  └────┬────┘   └────────────────────┘  │
+                                  │       │                                │
+                                  │       ▼                                │
+                                  │  ┌─────────┐   ┌────────────────────┐  │
+                                  │  │  Repo   │──▶│  SQLite Database   │  │
+                                  │  │ (SQLx)  │   │  (tasks/reminders) │  │
+                                  │  └─────────┘   └────────────────────┘  │
+                                  │       ▲                                │
+                                  │       │ poll                           │
+                                  │  ┌─────────┐   ┌────────────────────┐  │
+                                  │  │Scheduler│──▶│  Gemini Client     │  │
+                                  │  │(Runner) │   │  (Msg Generation)  │  │
+                                  │  └────┬────┘   └────────────────────┘  │
+                                  │       │                                │
+                                  │       ▼                                │
+                                  │  ┌──────────────────┐                  │
+                                  │  │  WAHA Client     │                  │
+                                  │  │  (Send WhatsApp) │                  │
+                                  │  └──────────────────┘                  │
+                                  └─────────────────────────────────────────┘
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- [Rust](https://rustup.rs/) installed.
-- [Docker & Docker Compose](https://docs.docker.com/get-docker/) (for running WAHA).
-- An active API Key from your chosen LLM provider.
 
-### Setup Instructions
+- [Rust](https://rustup.rs/) (1.9x)
+- A running [WAHA](https://waha.devlike.pro/) instance (self-hosted via Docker)
+- A [Google Gemini API Key](https://ai.google.dev/)
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/akmmp241/ingatin.git](https://github.com/akmmp241/ingatin.git)
-   cd ingatin
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/akmmp241/ingatin.git
+cd ingatin
+```
+
+### 2. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Database
+DATABASE_URL=sqlite://database/database.db
+
+# Google Gemini
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL_TYPE=gemini-2.0-flash
+
+# WAHA (WhatsApp HTTP API)
+WAHA_API_URL=http://localhost:3000
+WAHA_API_KEY=your_waha_api_key
+WAHA_SESSION=default
+
+# Scheduler (optional, defaults to 60 seconds)
+TICK_INTERVAL=60
+```
+
+### 3. Initialize the Database
+
+```bash
+sqlite3 database/database.db < database/schema.sql
+```
+
+### 4. Run the Application
+
+```bash
+cargo run
+```
+
+The server will start on `http://0.0.0.0:3000` with the background scheduler running concurrently.
+
+### 5. Configure WAHA Webhook
+
+Point your WAHA instance's webhook URL to:
+
+```
+http://<your-server-ip>:3000/webhook/waha
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
