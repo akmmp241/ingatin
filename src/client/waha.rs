@@ -17,9 +17,8 @@ pub async fn send_message(
         session: state.config.waha_session.clone(),
     };
 
-    let fresh_client = reqwest::Client::new();
-
-    let resp = fresh_client
+    let resp = state
+        .client
         .post(&url)
         .header("X-Api-Key", state.config.waha_api_key.as_str())
         .header(header::ACCEPT, "application/json")
